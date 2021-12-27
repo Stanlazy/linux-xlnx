@@ -116,6 +116,12 @@ static const struct regmap_irq_chip stpmic1_regmap_irq_chip = {
 	.num_irqs = ARRAY_SIZE(stpmic1_irqs),
 };
 
+struct stpmic1 *stpmic1_poweroff_ddata;
+static void stpmic1_power_off(void) {
+	regmap_update_bits(stpmic1_poweroff_ddata->regmap, SWOFF_PWRCTRL_CR, RESTART_REQUEST_ENABLED, 0);
+	regmap_update_bits(stpmic1_poweroff_ddata->regmap, SWOFF_PWRCTRL_CR, SOFTWARE_SWITCH_OFF_ENABLED, SOFTWARE_SWITCH_OFF_ENABLED);
+}
+
 static int stpmic1_probe(struct i2c_client *i2c,
 			 const struct i2c_device_id *id)
 {
@@ -157,6 +163,11 @@ static int stpmic1_probe(struct i2c_client *i2c,
 	if (ret) {
 		dev_err(dev, "IRQ Chip registration failed: %d\n", ret);
 		return ret;
+	}
+
+	if(!pm_power_off){
+		stpmic1_poweroff_ddata = ddata;
+		pm_power_off = stpmic1_power_off;
 	}
 
 	return devm_of_platform_populate(dev);
